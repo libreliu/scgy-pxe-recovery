@@ -4,33 +4,22 @@
 用于机房的PXE系统镜像工具，支持无人值守。
 
 #### Software Architecture
-Software architecture description
+基于 TinyCore Linux v9.0，经过重新打包initrd镜像，插入scgy_recover.sh。
 
-#### Installation
+#### Modifications
+- Packed `curl` and `pci-utils` into `/tmp/builtin/`
+- Packed `scgy_recover.sh` into `/opt/scgy_recover.sh`
+- Modified `/etc/inittab` to allow for direct entrance into the script
 
-1. xxxx
-2. xxxx
-3. xxxx
+#### Notice on Licenses
+`vmlinuz` and `tinycore` are borrowed from Tinycore Linux v9.0. Sources available under their licenses.
 
-#### Instructions
+#### Deploy
+1. Configure all the options with `config_script.sh`
+2. Build initrd by using `make_initrd.sh`. Note: having `AdvanceComp` will shrink the initrd to its minimum.
+3. Configure the rest. *(TODO on this: give a out-of-box iPXE build)*
+4. Set up DNS and TFTP, as well as http. (Eg. by `dnsmasq`)
+5. Enjoy
 
-1. xxxx
-2. xxxx
-3. xxxx
-
-#### Contribution
-
-1. Fork the repository
-2. Create Feat_xxx branch
-3. Commit your code
-4. Create Pull Request
-
-
-#### Gitee Feature
-
-1. You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2. Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3. Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4. The most valuable open source project [GVP](https://gitee.com/gvp)
-5. The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6. The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+#### TODOs
+Almost everything..

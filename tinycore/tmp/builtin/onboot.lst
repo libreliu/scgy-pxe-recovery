@@ -1,0 +1,5 @@
+ca-certificates.tcz
+openssl.tcz
+curl.tcz
+libpci.tcz
+pci-utils.tcz
