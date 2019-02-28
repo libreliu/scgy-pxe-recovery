@@ -7,8 +7,9 @@ TMPFS_SIZE="200M"
 # better non-exist dir
 TMPFS_MOUNTPOINT="/tmp/scgy_bak/"
 
-
-SERVER_PATH=ftp://192.168.0.1:2121/scgy-backup/disks
+# make sure there is a slash at the end of the path
+# or curl will return with (550) error
+SERVER_PATH=ftp://192.168.0.1:2121/scgy-backup/disks/
 UPLOAD_USERNAME=anonymous
 UPLOAD_PASSWORD=anonymous
 UPLOAD_MAX_TRIES=5
@@ -37,6 +38,10 @@ check_pc() {
 
 	# Zitan Liu's test environment
 	if [ "$CPU_MODEL" == "Intel(R) Core(TM) i5-3210M CPU @ 2.50GHz" ] && [ "$MEM_TOTAL" == "2071984" ] && [ "$VGA_CTRL" == "VMware SVGA II Adapter" ]; then		
+		MACHINE_TYPE="LZT-TEST-THINKPAD"
+	fi
+	
+	if [ "$CPU_MODEL" == "Intel(R) Atom(TM) CPU N270   @ 1.60GHz" ]; then
 		MACHINE_TYPE="LZT-TEST-TONGFANG"
 	fi
 }
@@ -93,6 +98,7 @@ upload_via_ftp() {
 	while [ $? -ne 0 ] && [ $UPLOAD_RETRY_COUNT -lt $UPLOAD_MAX_TRIES ]; do
 		echo "Error while uploading. Retry count: $(($UPLOAD_RETRY_COUNT + 1))"
 		UPLOAD_RETRY_COUNT=$(($UPLOAD_RETRY_COUNT + 1))
+		sleep 5
 		curl -T "$1" "$SERVER_PATH" --user "$UPLOAD_USERNAME:$UPLOAD_PASSWORD"
 	done
 	if [ $UPLOAD_RETRY_COUNT -eq $UPLOAD_MAX_TRIES ]; then
@@ -110,7 +116,7 @@ save_disk_once() {
 	FRAGS=$(($2/$MAX_FRAGMENT))
 	REMAINDER=$(( $2 - ($2/$MAX_FRAGMENT) * $MAX_FRAGMENT ))
 	[ $REMAINDER -ne 0 ] && FRAGS=$(( $FRAGS + 1 ))
-	$COUNTER=0
+	COUNTER=0
 	while [ $COUNTER -lt $FRAGS ]; do
 		# bs=100M for simplicity; trouble if bs has gone too large, since dd uses "bs" bytes of memory
 		run_dd "/dev/$1" "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk" $COUNTER 0 1 $MAX_FRAGMENT
@@ -118,7 +124,9 @@ save_disk_once() {
 			echo "Error while uploading.. Saving procedure terminated."
 			exit
 		fi
-		$COUNTER=$(($COUNTER+1))
+		# delete those images
+		rm "$TMPFS_MOUNTPOINT"/*.blk
+		COUNTER=$(($COUNTER+1))
 	done
 }
 

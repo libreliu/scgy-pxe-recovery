@@ -1,5 +1,6 @@
 #!ipxe
 
+dhcp
 kernel http://192.168.0.1/boot/vmlinuz
 initrd http://192.168.0.1/tinycore.gz
 boot
