@@ -1,0 +1,3 @@
+# ignore ipxe and its built binaries
+ipxe/
+undionly.kpxe
