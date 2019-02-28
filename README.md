@@ -11,8 +11,19 @@
 - Packed `scgy_recover.sh` into `/opt/scgy_recover.sh`
 - Modified `/etc/inittab` to allow for direct entrance into the script
 
+#### Requirements for iPXE
+Originated from [iPXE Download Page](http://ipxe.org/download)
+- gcc (version 3 or later)
+- binutils (version 2.18 or later)
+- make
+- perl
+- liblzma or xz header files
+- mtools
+- mkisofs (needed only for building .iso images)
+- syslinux (for isolinux, needed only for building .iso images)
+
 #### Notice on Licenses
-`vmlinuz` and `tinycore` are borrowed from Tinycore Linux v9.0. Sources available under their licenses.
+`vmlinuz` and `tinycore` are borrowed from [Tinycore Linux v9.0](http://www.tinycorelinux.net/). Sources available under their licenses.
 
 #### Deploy
 1. Configure all the options with `config_script.sh`
