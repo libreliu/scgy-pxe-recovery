@@ -1,5 +1,4 @@
 #!ipxe
-set version 0.0.0.6 (git9a17459)
 
 set menu_timeout 5000
 echo SCGYSU-Tech PXE Recovery Utility ${version}

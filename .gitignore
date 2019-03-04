@@ -1,9 +1,12 @@
 # ignore ipxe and its built binaries
 ipxe/
-undionly.kpxe
+scgy-cfg.kpxe
 
 # Tinycore Linux Core img
 tinycore.gz
+
+# embed script that can be generated from boot_script.ipxe.m
+boot_script.ipxe
 
 # Test stuff
 scgy-backup/
