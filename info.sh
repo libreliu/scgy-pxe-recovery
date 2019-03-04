@@ -12,7 +12,10 @@ TMPFS_MOUNTPOINT="/tmp/scgy_bak/"
 SERVER_PATH=ftp://192.168.0.1:2121/scgy-backup/disks/
 UPLOAD_USERNAME=anonymous
 UPLOAD_PASSWORD=anonymous
+DOWNLOAD_USERNAME=anonymous
+DOWNLOAD_PASSWORD=anonymous
 UPLOAD_MAX_TRIES=5
+DOWNLOAD_MAX_TRIES=5
 
 # max fragment size, in bytes (default 100M)
 # - make sure it smaller than TMPFS_SIZE.
@@ -46,9 +49,62 @@ check_pc() {
 	fi
 }
 
-recover_disk() {
-	echo "recovering disk"
+# $1 - remote filename to be downloaded (eg. sda-1.blk)
+# $2 - stored path inside TMPFS_MOUNTPOINT
+download_via_ftp() {
+	DOWNLOAD_RETRY_COUNT=0
+	curl "$SERVER_PATH/$1" --user "$DOWNLOAD_USERNAME:$DOWNLOAD_PASSWORD" -o "$TMPFS_MOUNTPOINT/$2"
+	while [ $? -ne 0 ] && [ $DOWNLOAD_RETRY_COUNT -lt $DOWNLOAD_MAX_TRIES ]; do
+		echo "Error while uploading. Retry count: $(($UPLOAD_RETRY_COUNT + 1))"
+		DOWNLOAD_RETRY_COUNT=$(($DOWNLOAD_RETRY_COUNT + 1))
+		sleep 5
+		curl "$SERVER_PATH/$1" --user "$DOWNLOAD_USERNAME:$DOWNLOAD_PASSWORD" -o "$TMPFS_MOUNTPOINT/$2"
+	done
+	if [ $DOWNLOAD_RETRY_COUNT -eq $DOWNLOAD_MAX_TRIES ]; then
+		echo "Max retry count exceeded. Abort."
+		return 1 # false
+	else
+		return 0 # true
+	fi
+}
 
+recover_disk_once() {
+	FRAGS=$(($2/$MAX_FRAGMENT))
+	REMAINDER=$(( $2 - ($2/$MAX_FRAGMENT) * $MAX_FRAGMENT ))
+	[ $REMAINDER -ne 0 ] && FRAGS=$(( $FRAGS + 1 ))
+	COUNTER=0
+	while [ $COUNTER -lt $FRAGS ]; do
+		if ! download_via_ftp "$1_$COUNTER.blk" "$1_$COUNTER.blk"; then
+			echo "Error while downloading.. Recover procedure terminated."
+			exit
+		fi
+		# bs=100M for simplicity; trouble if bs has gone too large, since dd uses "bs" bytes of memory
+		run_dd "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk" "/dev/$1" $COUNTER 0 1 $MAX_FRAGMENT
+		# delete those images
+		rm "$TMPFS_MOUNTPOINT"/*.blk
+		COUNTER=$(($COUNTER+1))
+	done
+}
+
+recover_disk() {
+	make_tmpfs
+	case $MACHINE_TYPE in 
+		LZT-TEST-TONGFANG)
+			echo "Machine: $MACHINE_TYPE"
+			if check_size sda4 2139095040; then
+				echo "Size correct."
+				recover_disk_once sda4 2139095040
+				echo "Operation completed successfully. Congrats! Reboot in 15 seconds."
+				sleep 15
+				reboot
+			else
+				echo "Wrong size! Abort."
+				exit
+			fi
+			;;
+		*) echo "Unknown machine: $MACHINE_TYPE. Abort." ; exit
+			;;
+	esac
 }
 
 # $1 - disk to be checked (better with sda1/2/3, since sda will return multiple)
@@ -138,8 +194,9 @@ save_disk() {
 			if check_size sda4 2139095040; then
 				echo "Size correct."
 				save_disk_once sda4 2139095040
-				echo "Operation completed successfully. Congrats!"
-				exit
+				echo "Operation completed successfully. Congrats! Reboot in 15 seconds."
+				sleep 15
+				reboot
 			else
 				echo "Wrong size! Abort."
 				exit
@@ -152,6 +209,7 @@ save_disk() {
 
 if [ "$1" == "restore" ]; then
 	echo "Entering restoration process (todo)"
+	check_pc
 	recover_disk
 fi
 

@@ -1,7 +1,14 @@
 # scgy-pxe-recovery
 
 #### Description
-用于机房的PXE系统镜像工具，支持无人值守。
+本项目准备用于少院机房的无人值守恢复系统。系统基于扇区层面的复制，暂不支持基于文件系统的恢复。
+通过维护一个少人使用、及时更新的干净系统，并定期上传其镜像（使用“Save”功能）到FTP服务器，再在有需要恢复的计算机上，在PXE阶段按**Ctrl-B**即可进入iPXE菜单，选择进入恢复环境。
+恢复环境中，根据提示，可以进入shell/脱离无人值守/选择功能。如果什么操作都不做，就会恢复后重启系统。
+
+This is intended to be used in SCGY's computer room. Lacking in recover mechanisms in SCGY have resulted in messy computers.
+
+#### Performance
+- 100Mbps Ethernet, Atom N270 with 5400rpm SATA, block fragment 100M. ~11.6M/s for downloading/uploading and ~50M/s for disk read/write.
 
 #### Software Architecture
 基于 TinyCore Linux v9.0，经过重新打包initrd镜像，插入scgy_recover.sh。
@@ -31,7 +38,7 @@ Originated from [iPXE Download Page](http://ipxe.org/download)
 3. Build iPXE image by using `build_ipxe.sh`.
 4. Set up DNS and TFTP, as well as http. (Eg. `dnsmasq` + `darkhttpd`)
    For example configurations, open `setup_pxe_env.sh` with a text editor.
-5. Enjoy.
+5. Set up your machine's type and the action you want to do in `info.sh`. An example is provided by detecting and running on *LZT-TEST-TONGFANG* machine.
 
 #### Hierarchy
 ```
@@ -75,5 +82,9 @@ Originated from [iPXE Download Page](http://ipxe.org/download)
 └── vmlinuz                    # TinyCore Linux v9.0 kernel binary
 ```
 
-#### TODOs
-Almost everything..
+#### TODOs & Bugs
+1. Currently during iPXE exit, a manual "Enter" is required.
+2. Smart Deploy System
+3. Partition Table Override for MBR and GPT
+4. Download & dd simutaenously
+5. Exit conditions improvement and info.sh problem in saving process
