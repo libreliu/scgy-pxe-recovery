@@ -1,3 +1,9 @@
 # ignore ipxe and its built binaries
 ipxe/
 undionly.kpxe
+
+# Tinycore Linux Core img
+tinycore.gz
+
+# Test stuff
+scgy-backup/

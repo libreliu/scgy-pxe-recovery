@@ -119,7 +119,7 @@ save_disk_once() {
 	COUNTER=0
 	while [ $COUNTER -lt $FRAGS ]; do
 		# bs=100M for simplicity; trouble if bs has gone too large, since dd uses "bs" bytes of memory
-		run_dd "/dev/$1" "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk" $COUNTER 0 1 $MAX_FRAGMENT
+		run_dd "/dev/$1" "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk" 0 $COUNTER 1 $MAX_FRAGMENT
 		if ! upload_via_ftp "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk"; then
 			echo "Error while uploading.. Saving procedure terminated."
 			exit
