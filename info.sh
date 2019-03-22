@@ -9,11 +9,11 @@ TMPFS_MOUNTPOINT="/tmp/scgy_bak/"
 
 # make sure there is a slash at the end of the path
 # or curl will return with (550) error
-SERVER_PATH=ftp://192.168.0.1:2121/scgy-backup/disks/
-UPLOAD_USERNAME=anonymous
-UPLOAD_PASSWORD=anonymous
-DOWNLOAD_USERNAME=anonymous
-DOWNLOAD_PASSWORD=anonymous
+SERVER_PATH=ftp://192.168.0.251/scgy-disks/disk/
+UPLOAD_USERNAME=scgy-upload
+UPLOAD_PASSWORD=upl-scgy
+DOWNLOAD_USERNAME=scgy-upload
+DOWNLOAD_PASSWORD=upl-scgy
 UPLOAD_MAX_TRIES=5
 DOWNLOAD_MAX_TRIES=5
 
@@ -46,6 +46,11 @@ check_pc() {
 	
 	if [ "$CPU_MODEL" == "Intel(R) Atom(TM) CPU N270   @ 1.60GHz" ]; then
 		MACHINE_TYPE="LZT-TEST-TONGFANG"
+	fi
+
+	# SCGY Computer Room, new machine
+	if [ "$CPU_MODEL" == "Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz" ] && [ "$MEM_TOTAL" == "3073288" ] && [ "$VGA_CTRL" == "Advanced Micro Devices, Inc. [AMD/ATI] Oland XT [Radeon HD 8670 / R7 250/350] (rev 87)" ] ; then
+		MACHINE_TYPE="SCGY-LENOVO-NEW"
 	fi
 }
 
@@ -108,10 +113,11 @@ recover_disk() {
 }
 
 # $1 - disk to be checked (better with sda1/2/3, since sda will return multiple)
+# FIX: | head -n1 can fix
 # $2 - size in bytes
 # 0 if equal, 1 if not
 check_size() {
-	SIZE_IN_BLK=`cat /proc/partitions | grep "$1" | awk '{ print $3 }'`
+	SIZE_IN_BLK=`cat /proc/partitions | grep "$1" | head -n1 | awk '{ print $3 }'`
 	SIZE_IN_BYTE=$((${SIZE_IN_BLK}*1024))
 	echo "Disk $1 has $SIZE_IN_BYTE bytes. "
 	[ $SIZE_IN_BYTE -eq $2 ] && return 0 || return 1
@@ -186,6 +192,52 @@ save_disk_once() {
 	done
 }
 
+# save_gpt sd[a-z] partitions
+# http://www.techpository.com/linux-copy-gpt-partition-table-with-dd/
+save_gpt() {
+	echo "Size correct."
+	run_dd "/dev/$1" "$TMPFS_MOUNTPOINT/LENOVO_NEW_GPT_TABLE" 0 0 1 $((128*$2+1024))
+	if ! upload_via_ftp "$TMPFS_MOUNTPOINT/LENOVO_NEW_GPT_TABLE"; then
+		echo "Error while uploading.. Saving procedure terminated."
+		exit
+	fi
+	rm "$TMPFS_MOUNTPOINT/LENOVO_NEW_GPT_TABLE"
+}
+
+# large sizes will overflow under the shell
+# $1 - disk to be checked (better with sda1/2/3, since sda will return multiple)
+# FIX: | head -n1 can fix
+# $2 - size in BLK (bytes / 1024)
+# 0 if equal, 1 if not
+check_size_large() {
+	SIZE_IN_BLK=`cat /proc/partitions | grep "$1" | head -n1 | awk '{ print $3 }'`
+	echo "Disk $1 has $SIZE_IN_BLK bytes. "
+	[ $SIZE_IN_BLK == $2 ] && return 0 || return 1
+}
+
+# large sizes will overflow under the shell
+# $1 - disk to be saved
+# $2 - actual blocks of the partition
+
+MAX_FRAGMENT_LARGE=$(($MAX_FRAGMENT/1024))
+save_disk_once_large() {
+	FRAGS=$(($2/$MAX_FRAGMENT_LARGE))
+	REMAINDER=$(( $2 - ($2/$MAX_FRAGMENT_LARGE) * $MAX_FRAGMENT_LARGE ))
+	[ $REMAINDER -ne 0 ] && FRAGS=$(( $FRAGS + 1 ))
+	COUNTER=0
+	while [ $COUNTER -lt $FRAGS ]; do
+		# bs=100M for simplicity; trouble if bs has gone too large, since dd uses "bs" bytes of memory
+		run_dd "/dev/$1" "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk" 0 $COUNTER 1 $MAX_FRAGMENT
+		if ! upload_via_ftp "$TMPFS_MOUNTPOINT/$1_$COUNTER.blk"; then
+			echo "Error while uploading.. Saving procedure terminated."
+			exit
+		fi
+		# delete those images
+		rm "$TMPFS_MOUNTPOINT"/*.blk
+		COUNTER=$(($COUNTER+1))
+	done
+}
+
 save_disk() {
 	make_tmpfs
 	case $MACHINE_TYPE in 
@@ -202,19 +254,54 @@ save_disk() {
 				exit
 			fi
 			;;
+		SCGY-LENOVO-NEW)
+			echo "Machine: $MACHINE_TYPE"
+			echo "Saving GPT Partition Table..."
+			if check_size_large sda 976762584; then
+				save_gpt sda 5
+				save_disk_once sda1 523239424
+				save_disk_once sda2 104857600
+				save_disk_once sda3 16777216
+				save_disk_once_large sda4 41943040
+				echo "Operation completed successfully. Congrats! Reboot in 15 seconds."
+				sleep 15
+				reboot
+			else
+				echo "Wrong size! Abort."
+				exit
+			fi
+			;;
 		*) echo "Unknown machine: $MACHINE_TYPE. Abort." ; exit
 			;;
 	esac
 }
 
 if [ "$1" == "restore" ]; then
-	echo "Entering restoration process (todo)"
-	check_pc
-	recover_disk
+	read -p "Please enter password:" PASS_INPUT
+	if [ $PASS_INPUT == "iknowthatalldatawillbelost" ]; then
+		check_pc
+		recover_disk
+	else
+		echo "Oops, wrong password."
+		echo "Password can be seen on http://ourscgy.ustc.edu.cn/comp_index.html"
+		
+		echo "Reboot in 15 seconds."
+		sleep 15
+		reboot
+	fi
 fi
 
 if [ "$1" == "save" ]; then
-	echo "saving"
-	check_pc
-	save_disk
+	read -p "Please enter password:" PASS_INPUT
+	if [ $PASS_INPUT == "xtxsaikou" ]; then
+		check_pc
+		save_disk
+	else
+		echo "Oops, wrong password."
+		echo "Contact jauntyliu <jauntyliu@mail.ustc.edu.cn> for password."
+
+		echo "Reboot in 15 seconds."
+		sleep 15
+		reboot
+	fi
 fi

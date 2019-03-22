@@ -7,7 +7,7 @@ prompt --key 0x02 --timeout 1500 Press Ctrl-B to enter SCGY Recovery Menu... && 
 :start
 menu SCGYSU-Tech PXE Recovery Utility ${version}
 item --gap --             ------------------------- Tools and utilities ----------------------------
-item --key r recovery Run Computer Recovery Utility
+item --key r recovery Run Computer Recovery Utility (Notice: This will *ERASE* all of your file!)
 item --gap --             ------------------------- Advanced options -------------------------------
 item shell                Drop to iPXE shell
 item reboot               Reboot computer
@@ -40,6 +40,6 @@ goto start
 
 :recovery
 dhcp
-kernel http://192.168.0.1/vmlinuz
-initrd http://192.168.0.1/tinycore.gz
+kernel tftp://192.168.0.251/vmlinuz
+initrd tftp://192.168.0.251/tinycore.gz
 boot
