@@ -36,6 +36,8 @@ Originated from [iPXE Download Page](http://ipxe.org/download)
 `vmlinuz` and `tinycore` are borrowed from [Tinycore Linux v9.0](http://www.tinycorelinux.net/). Sources available under their licenses.
 
 ### Deploy
+0. **WARNING**: Problem found while sending entire tinycore folder via Git, use the cpio (gzipped) instead.
+   `mkdir /mnt/tmp && cd /mnt/tmp && gunzip tinycore.gz && cpio -idmv < tinycore`
 1. Configure all the options with `config_script.sh`, necessary for different IP's and paths other than test environment.
 2. Build initrd by using `make_initrd.sh`. Note: having `AdvanceComp` will shrink the initrd to its minimum.
 3. Build iPXE image by using `build_ipxe.sh`.
