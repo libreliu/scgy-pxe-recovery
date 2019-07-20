@@ -84,5 +84,5 @@ else
 	cd ..
 fi
 
-cp $EMBED_SCRIPT ./ipxe/src && cd ipxe/src && make bin/undionly.kpxe EMBED="$EMBED_SCRIPT" && cp bin/undionly.kpxe ../../undionly.kpxe
+cp $EMBED_SCRIPT ./ipxe/src && cd ipxe/src && make bin/undionly.kpxe EMBED="$EMBED_SCRIPT" NO_WERROR=1 && cp bin/undionly.kpxe ../../undionly.kpxe
 mv ../../undionly.kpxe "../../$EXPECTED_IPXE_OUTPUT"
